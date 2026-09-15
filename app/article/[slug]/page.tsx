@@ -1,5 +1,32 @@
-const data:Record<string,{title:string;category:string;intro:string;sections:[string,string][]}>={
- 'better-digital-notes':{title:'كيف تبني نظامًا أفضل لملاحظاتك الرقمية؟',category:'التقنية',intro:'الملاحظات الجيدة ليست مجرد مكان لتخزين النصوص؛ قيمتها تظهر عندما تستطيع العثور على الفكرة وفهمها واستخدامها.',sections:[['ابدأ ببنية بسيطة','أنشئ عددًا محدودًا من التصنيفات، واستخدم عناوين واضحة وكلمات مفتاحية ثابتة بدل إنشاء مجلدات كثيرة يصعب الحفاظ عليها.'],['اكتب للسياق المستقبلي','أضف سطرًا يشرح سبب حفظ الملاحظة ومتى يمكن استخدامها. هذا يجعل المعلومة مفهومة حتى بعد مرور أشهر.'],['راجع بدل التكديس','خصص وقتًا دوريًا لحذف التكرار وتحديث الروابط وتحويل الملاحظات المهمة إلى ملخصات قصيرة قابلة للاستخدام.']]},
- 'learn-with-less-stress':{title:'التعلم بضغط أقل ونتائج أفضل',category:'التعلم',intro:'التعلم الفعال لا يحتاج إلى جلسات طويلة دائمًا؛ الأهم هو الاستمرارية والمراجعة النشطة.',sections:[['قسّم المادة','حوّل الموضوع الكبير إلى وحدات صغيرة لها أهداف واضحة، ثم اختبر نفسك بعد كل وحدة.'],['استخدم الاسترجاع النشط','حاول الإجابة من الذاكرة قبل العودة إلى المصدر. هذه الطريقة تكشف الفجوات بدل إعطاء شعور زائف بالإتقان.'],['اترك مساحة للراحة','الراحة جزء من الخطة وليست فشلًا. حافظ على إيقاع تستطيع تكراره على المدى الطويل.']]},
- 'healthy-daily-routine':{title:'كيف تصمم روتينًا يوميًا أكثر توازنًا؟',category:'الصحة العامة',intro:'هذه إرشادات عامة وليست تشخيصًا أو علاجًا طبيًا. الهدف هو بناء عادات يومية واقعية.',sections:[['اجعل الحركة سهلة','اختر نشاطًا تستطيع تكراره بانتظام، وابدأ بخطوات صغيرة بدل تغييرات حادة يصعب استمرارها.'],['احمِ وقت النوم','حاول الحفاظ على مواعيد متقاربة للنوم والاستيقاظ وقلل المشتتات قبل النوم.'],['راقب ما يناسبك','العادات تختلف بين الأشخاص. إذا كانت لديك مشكلة صحية أو أعراض مستمرة، فاستشر مختصًا مناسبًا.']]}}
-export default async function Article({params}:{params:Promise<{slug:string}>}){const {slug}=await params;const a=data[slug]||data['better-digital-notes'];return <main className="container article"><div className="tag">{a.category} · 2026</div><h1>{a.title}</h1><p><strong>آخر مراجعة:</strong> 15 سبتمبر 2026 · <strong>مدة القراءة:</strong> 3 دقائق</p><p className="notice">{a.intro}</p>{a.sections.map(([h,p])=><section key={h}><h2>{h}</h2><p>{p}</p></section>)}<p><strong>المصادر:</strong> تُضاف المصادر الأصلية المناسبة لكل مقال عند النشر التحريري النهائي.</p><a className="btn" href="/archive">العودة إلى الأرشيف</a></main>}
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { articles, getArticle } from '@/lib/content';
+
+export function generateStaticParams() {
+  return articles.map(({ slug }) => ({ slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const article = getArticle(slug);
+  if (!article) return {};
+  return { title: `${article.title} | نبض يومي`, description: article.excerpt };
+}
+
+export default async function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const article = getArticle(slug);
+  if (!article) notFound();
+  return (
+    <main className="container article">
+      <a href="/">← الرئيسية</a>
+      <div className="tag">{article.category}</div>
+      <h1>{article.title}</h1>
+      <p className="notice">{article.excerpt}</p>
+      <p><strong>تاريخ النشر:</strong> {article.publishedAt} · <strong>مدة القراءة:</strong> 3 دقائق</p>
+      {article.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+      <p><strong>المصادر:</strong> تُضاف المصادر الأصلية المناسبة لكل مقال عند النشر التحريري النهائي.</p>
+      <a className="btn" href="/archive">العودة إلى الأرشيف</a>
+    </main>
+  );
+}
